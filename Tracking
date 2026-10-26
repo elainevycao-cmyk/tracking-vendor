@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freelance Town: ANM ✕ CRE Quest Hub</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- PapaParse: Giải quyết triệt để lỗi dính chùm cột CSV -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts: Retro Mid-Century & Cute Game -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            game: ['Fredoka', 'sans-serif'],
+            sans: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            latte: '#F5EFEB',
+            creamy: '#FFFDF9',
+            espresso: '#3A271D',
+            mustard: '#EAA228',
+            mustardLight: '#FEF4D6',
+            sage: '#7C9885',
+            sageLight: '#E3EDE6',
+            coral: '#D96552',
+            coralLight: '#FCEAE7',
+            sky: '#4A7C9B',
+            skyLight: '#E2ECF3',
+            lavender: '#8B789D',
+            lavenderLight: '#ECE6F2',
+          },
+          boxShadow: {
+            'retro': '4px 4px 0px #3A271D',
+            'retro-lg': '6px 6px 0px #3A271D',
+            'retro-sm': '2px 2px 0px #3A271D',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F5EFEB;
+      color: #3A271D;
+      background-image: radial-gradient(#3A271D 1px, transparent 1px);
+      background-size: 26px 26px;
+    }
+    .btn-bouncy {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-bouncy:hover {
+      transform: translateY(-2px);
+    }
+    .btn-bouncy:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0px 0px 0px #3A271D !important;
+    }
+    /* Thanh cuộn phong cách retro */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #F5EFEB; border-left: 2px solid #3A271D; }
+    ::-webkit-scrollbar-thumb { background: #EAA228; border-radius: 4px; border: 2px solid #3A271D; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+  <!-- TOP STATUS & CONTROLLER BAR -->
+  <header class="w-full max-w-6xl mb-6 bg-creamy p-4 rounded-3xl border-3 border-espresso shadow-retro-lg flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 bg-mustard rounded-2xl border-2 border-espresso flex items-center justify-center text-2xl shadow-retro transform -rotate-3 animate-pulse">
+        🏡
+      </div>
+      <div>
+        <h1 class="text-xl md:text-2xl font-bold font-game tracking-tight text-espresso flex items-center gap-2">
+          FREELANCE TOWN (ANM ✕ CRE)
+          <span class="text-[10px] bg-coral text-creamy px-2 py-0.5 rounded-full border border-espresso uppercase font-game">Game Hub</span>
+        </h1>
+        <p class="text-xs text-espresso/70 font-medium">Bấm vào từng khu vực để kích hoạt nhiệm vụ & bảng dữ liệu</p>
+      </div>
+    </div>
+
+    <!-- CẮM LINK GOOGLE SHEET CSV -->
+    <div class="flex items-center gap-2 w-full md:w-auto">
+      <input 
+        id="sheetUrlInput"
+        type="text" 
+        placeholder="🔗 Dán link Google Sheet CSV..." 
+        class="flex-1 md:w-72 px-3 py-2 text-xs bg-latte border-2 border-espresso rounded-xl focus:outline-none focus:bg-white shadow-retro-sm font-medium"
+      />
+      <button 
+        onclick="syncDataFromCSV()" 
+        class="px-4 py-2 bg-sage hover:bg-sage/90 text-white font-game text-xs font-bold rounded-xl border-2 border-espresso shadow-retro btn-bouncy flex items-center gap-1"
+      >
+        <span>🔄</span> Cập nhật
+      </button>
+      <button 
+        onclick="resetMockData()" 
+        title="Dùng dữ liệu mẫu" 
+        class="px-3 py-2 bg-latte text-espresso font-game text-xs rounded-xl border-2 border-espresso shadow-retro-sm btn-bouncy"
+      >
+        Demo
+      </button>
+    </div>
+  </header>
+
+  <!-- GAME TOWN MAP: 4 KHU VỰC TƯƠNG TÁC CHÍNH -->
+  <main class="w-full max-w-6xl mb-8">
+    <div class="text-center mb-6">
+      <span class="bg-mustardLight text-mustard border-2 border-espresso px-4 py-1 rounded-full font-game text-xs font-bold shadow-retro-sm inline-block transform -rotate-1">
+        ✨ CHỌN ĐỊA ĐIỂM BẠN MUỐN ĐẾN ĐỂ MỞ TÍNH NĂNG ✨
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      
+      <!-- STATION 1: BẢNG 19 CỘT DỮ LIỆU -->
+      <div 
+        onclick="openModal('modalTable')" 
+        class="bg-creamy hover:bg-skyLight/30 border-3 border-espresso rounded-3xl p-5 shadow-retro-lg cursor-pointer btn-bouncy flex flex-col justify-between group transition-all"
+      >
+        <div>
+          <div class="w-14 h-14 bg-sky text-white rounded-2xl border-2 border-espresso flex items-center justify-center text-3xl shadow-retro mb-4 group-hover:scale-110 transition-transform">
+            📊
+          </div>
+          <span class="text-[10px] font-game bg-skyLight text-sky px-2 py-0.5 rounded-md border border-espresso uppercase font-bold">Trạm 1</span>
+          <h2 class="font-game text-lg font-bold text-espresso mt-1">BẢNG DỮ LIỆU 19 CỘT</h2>
+          <p class="text-xs text-espresso/70 mt-1 leading-snug">Toàn bộ 19 cột phân vùng 5 Zone: PnL, Trình ký, Tiền nong, Next step.</p>
+        </div>
+        <div class="mt-4 pt-3 border-t-2 border-espresso/20 flex items-center justify-between text-xs font-game font-bold text-sky">
+          <span>Mở Sổ Cái</span>
+          <span>➔</span>
+        </div>
+      </div>
+
+      <!-- STATION 2: BẢNG TRACKING TIẾN ĐỘ PO (KANBAN) -->
+      <div 
+        onclick="openModal('modalKanban')" 
+        class="bg-creamy hover:bg-coralLight/30 border-3 border-espresso rounded-3xl p-5 shadow-retro-lg cursor-pointer btn-bouncy flex flex-col justify-between group transition-all"
+      >
+        <div>
+          <div class="w-14 h-14 bg-coral text-white rounded-2xl border-2 border-espresso flex items-center justify-center text-3xl shadow-retro mb-4 group-hover:scale-110 transition-transform">
+            📋
+          </div>
+          <span class="text-[10px] font-game bg-coralLight text-coral px-2 py-0.5 rounded-md border border-espresso uppercase font-bold">Trạm 2</span>
+          <h2 class="font-game text-lg font-bold text-espresso mt-1">TRACKING KÝ PO</h2>
+          <p class="text-xs text-espresso/70 mt-1 leading-snug">Kanban board 4 bước: Chưa trình ➔ Đã trình ➔ Đã ký ➔ Đã gửi Vendor.</p>
+        </div>
+        <div class="mt-4 pt-3 border-t-2 border-espresso/20 flex items-center justify-between text-xs font-game font-bold text-coral">
+          <span>Xem Tiến Độ</span>
+          <span>➔</span>
+        </div>
+      </div>
+
+      <!-- STATION 3: BƯU ĐIỆN MẪU EMAIL LEGAL & FIN -->
+      <div 
+        onclick="openModal('modalEmail')" 
+        class="bg-creamy hover:bg-mustardLight/30 border-3 border-espresso rounded-3xl p-5 shadow-retro-lg cursor-pointer btn-bouncy flex flex-col justify-between group transition-all"
+      >
+        <div>
+          <div class="w-14 h-14 bg-mustard text-espresso rounded-2xl border-2 border-espresso flex items-center justify-center text-3xl shadow-retro mb-4 group-hover:scale-110 transition-transform">
+            📮
+          </div>
+          <span class="text-[10px] font-game bg-mustardLight text-mustard px-2 py-0.5 rounded-md border border-espresso uppercase font-bold">Trạm 3</span>
+          <h2 class="font-game text-lg font-bold text-espresso mt-1">SOẠN EMAIL 1-CLICK</h2>
+          <p class="text-xs text-espresso/70 mt-1 leading-snug">Tự động điền Campaign & PO ID xin số PO FIN, review BBNT kèm nút copy.</p>
+        </div>
+        <div class="mt-4 pt-3 border-t-2 border-espresso/20 flex items-center justify-between text-xs font-game font-bold text-mustard">
+          <span>Gửi Thư Ngay</span>
+          <span>➔</span>
+        </div>
+      </div>
+
+      <!-- STATION 4: NHÀ TRỢ LÝ PUDDING BOT -->
+      <div 
+        onclick="openModal('modalBot')" 
+        class="bg-creamy hover:bg-lavenderLight/30 border-3 border-espresso rounded-3xl p-5 shadow-retro-lg cursor-pointer btn-bouncy flex flex-col justify-between group transition-all"
+      >
+        <div>
+          <div class="w-14 h-14 bg-lavender text-white rounded-2xl border-2 border-espresso flex items-center justify-center text-3xl shadow-retro mb-4 group-hover:scale-110 transition-transform">
+            🍮
+          </div>
+          <span class="text-[10px] font-game bg-lavenderLight text-lavender px-2 py-0.5 rounded-md border border-espresso uppercase font-bold">Trạm 4</span>
+          <h2 class="font-game text-lg font-bold text-espresso mt-1">TRỢ LÝ PUDDING</h2>
+          <p class="text-xs text-espresso/70 mt-1 leading-snug">Hỏi nhanh tiến độ của Trâm, Nga, Phong hoặc hỏi bước cần làm tiếp theo.</p>
+        </div>
+        <div class="mt-4 pt-3 border-t-2 border-espresso/20 flex items-center justify-between text-xs font-game font-bold text-lavender">
+          <span>Trò Chuyện</span>
+          <span>➔</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TICKER METRICS TỔNG TIỀN NỢ (COZY DASHBOARD MINI) -->
+    <div class="mt-6 bg-creamy border-3 border-espresso rounded-3xl p-4 shadow-retro flex flex-col sm:flex-row items-center justify-around gap-4">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">👩‍💻</span>
+        <div>
+          <div class="text-[11px] font-game font-bold text-coral uppercase">Tổng Tiền Freelance Chờ Đi Tiền:</div>
+          <div id="quickFreelanceUnpaid" class="text-xl font-bold font-game text-espresso">0 ₫</div>
+        </div>
+      </div>
+      <div class="h-8 w-0.5 bg-espresso/20 hidden sm:block"></div>
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">🏢</span>
+        <div>
+          <div class="text-[11px] font-game font-bold text-mustard uppercase">Tổng Tiền CRE Vendor (/0.9/1.1):</div>
+          <div id="quickVendorUnpaid" class="text-xl font-bold font-game text-espresso">0 ₫</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== CÁC MODAL BẢNG & TÍNH NĂNG (BẤM LÀ BUNG RA) ==================== -->
+
+  <!-- MODAL 1: BẢNG DỮ LIỆU 19 CỘT -->
+  <div id="modalTable" class="fixed inset-0 bg-espresso/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-creamy border-3 border-espresso rounded-3xl max-w-7xl w-full h-[90vh] flex flex-col shadow-retro-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div class="p-4 bg-latte border-b-2 border-espresso flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📊</span>
+          <h3 class="font-game text-lg font-bold text-espresso">BẢNG DỮ LIỆU 19 CỘT CHUẨN XÁC</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <input 
+            type="text" 
+            id="tableSearchInput" 
+            oninput="renderTable()" 
+            placeholder="Tìm bạn Freelance, CAM..." 
+            class="text-xs bg-white border border-espresso px-3 py-1.5 rounded-xl font-medium"
+          />
+          <button onclick="closeModal('modalTable')" class="w-8 h-8 rounded-full bg-coral text-white font-game font-bold border-2 border-espresso flex items-center justify-center shadow-retro-sm btn-bouncy">✕</button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-auto p-4">
+        <table class="w-full text-xs text-left border-collapse whitespace-nowrap">
+          <thead class="sticky top-0 z-10 border-b-2 border-espresso text-[11px] font-game tracking-wider">
+            <tr>
+              <th class="p-2.5 bg-latte border-r border-espresso text-center">Thao tác</th>
+              <th class="p-2.5 bg-sky text-white border-r border-espresso">1. Entity</th>
+              <th class="p-2.5 bg-sky text-white border-r border-espresso">2. Tên Campaign</th>
+              <th class="p-2.5 bg-sky text-white border-r border-espresso">3. Freelance</th>
+              <th class="p-2.5 bg-sky text-white border-r border-espresso">4. Link/Tên File PnL</th>
+              <th class="p-2.5 bg-sky text-white border-r-2 border-espresso">5. SOW</th>
+              <th class="p-2.5 bg-mustard text-espresso border-r border-espresso">6. Trạng thái PO</th>
+              <th class="p-2.5 bg-mustard text-espresso border-r border-espresso">7. PO ID / PO No</th>
+              <th class="p-2.5 bg-coral text-white border-r border-espresso">8. Trình ký PO</th>
+              <th class="p-2.5 bg-mustard text-espresso border-r border-espresso">9. Trạng thái PnL</th>
+              <th class="p-2.5 bg-mustard text-espresso border-r-2 border-espresso">10. File PnL</th>
+              <th class="p-2.5 bg-sage text-white border-r border-espresso">11. Tiền Freelance</th>
+              <th class="p-2.5 bg-sage text-white border-r border-espresso">12. Vendor</th>
+              <th class="p-2.5 bg-mustard text-espresso border-r border-espresso">13. Tiền Vendor (Auto)</th>
+              <th class="p-2.5 bg-sage text-white border-r border-espresso">14. Điền Tiền FIN</th>
+              <th class="p-2.5 bg-sage text-white border-r border-espresso">15. Ngày Đi Tiền FIN</th>
+              <th class="p-2.5 bg-sage text-white border-r-2 border-espresso">16. Điền Tiền CRE</th>
+              <th class="p-2.5 bg-lavender text-white border-r border-espresso">17. TRẠNG THÁI</th>
+              <th class="p-2.5 bg-sage text-white border-r border-espresso min-w-[280px]">18. Next step</th>
+              <th class="p-2.5 bg-lavender text-white">19. DRIVE</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-espresso/20 font-medium bg-white">
+            <!-- Data render -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: BẢNG KANBAN TIẾN ĐỘ PO -->
+  <div id="modalKanban" class="fixed inset-0 bg-espresso/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-creamy border-3 border-espresso rounded-3xl max-w-6xl w-full h-[85vh] flex flex-col shadow-retro-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div class="p-4 bg-latte border-b-2 border-espresso flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📋</span>
+          <h3 class="font-game text-lg font-bold text-espresso">BẢNG TIẾN ĐỘ TRÌNH KÝ PO (KANBAN BOARD)</h3>
+        </div>
+        <button onclick="closeModal('modalKanban')" class="w-8 h-8 rounded-full bg-coral text-white font-game font-bold border-2 border-espresso flex items-center justify-center shadow-retro-sm btn-bouncy">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-auto p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Cột 1: Chưa trình -->
+        <div class="bg-latte p-3 rounded-2xl border-2 border-espresso flex flex-col">
+          <div class="font-game text-xs font-bold text-espresso mb-3 flex items-center justify-between pb-2 border-b border-espresso/20">
+            <span>⚪ 1. CHƯA TRÌNH</span>
+            <span id="badgeCount_ChuaTrinh" class="bg-white px-2 py-0.5 rounded-full border border-espresso text-[10px]">0</span>
+          </div>
+          <div id="kanbanCol_ChuaTrinh" class="flex-1 space-y-2 overflow-y-auto"></div>
+        </div>
+
+        <!-- Cột 2: Đã trình -->
+        <div class="bg-mustardLight p-3 rounded-2xl border-2 border-espresso flex flex-col">
+          <div class="font-game text-xs font-bold text-mustard mb-3 flex items-center justify-between pb-2 border-b border-espresso/20">
+            <span>🟡 2. ĐÃ TRÌNH (CHỜ HUY)</span>
+            <span id="badgeCount_DaTrinh" class="bg-white px-2 py-0.5 rounded-full border border-espresso text-[10px]">0</span>
+          </div>
+          <div id="kanbanCol_DaTrinh" class="flex-1 space-y-2 overflow-y-auto"></div>
+        </div>
+
+        <!-- Cột 3: Đã ký -->
+        <div class="bg-coralLight p-3 rounded-2xl border-2 border-espresso flex flex-col">
+          <div class="font-game text-xs font-bold text-coral mb-3 flex items-center justify-between pb-2 border-b border-espresso/20">
+            <span>🟢 3. ĐÃ KÝ MỘC</span>
+            <span id="badgeCount_DaKy" class="bg-white px-2 py-0.5 rounded-full border border-espresso text-[10px]">0</span>
+          </div>
+          <div id="kanbanCol_DaKy" class="flex-1 space-y-2 overflow-y-auto"></div>
+        </div>
+
+        <!-- Cột 4: Đã gửi Vendor -->
+        <div class="bg-sageLight p-3 rounded-2xl border-2 border-espresso flex flex-col">
+          <div class="font-game text-xs font-bold text-sage mb-3 flex items-center justify-between pb-2 border-b border-espresso/20">
+            <span>🔵 4. ĐÃ GỬI VENDOR</span>
+            <span id="badgeCount_DaGuiVendor" class="bg-white px-2 py-0.5 rounded-full border border-espresso text-[10px]">0</span>
+          </div>
+          <div id="kanbanCol_DaGuiVendor" class="flex-1 space-y-2 overflow-y-auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: BƯU ĐIỆN EMAIL (1-CLICK COPY) -->
+  <div id="modalEmail" class="fixed inset-0 bg-espresso/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-creamy border-3 border-espresso rounded-3xl max-w-xl w-full p-5 shadow-retro-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div class="flex items-center justify-between pb-3 border-b-2 border-espresso mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📮</span>
+          <h3 class="font-game text-lg font-bold text-espresso">MẪU EMAIL REVIEW BBNT & XIN SỐ PO</h3>
+        </div>
+        <button onclick="closeModal('modalEmail')" class="w-8 h-8 rounded-full bg-coral text-white font-game font-bold border-2 border-espresso flex items-center justify-center shadow-retro-sm btn-bouncy">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs mb-4">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="font-game text-[10px] text-espresso/70">Entity:</label><input id="emailField_entity" value="AMV" oninput="updateEmailBox()" class="w-full bg-latte p-2 rounded-xl border border-espresso font-semibold"></div>
+          <div><label class="font-game text-[10px] text-espresso/70">Tên Campaign:</label><input id="emailField_cam" value="TikTok Campaign 2026" oninput="updateEmailBox()" class="w-full bg-latte p-2 rounded-xl border border-espresso font-semibold"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="font-game text-[10px] text-espresso/70">PO ID / CAM ID:</label><input id="emailField_id" value="CAM0083383" oninput="updateEmailBox()" class="w-full bg-latte p-2 rounded-xl border border-espresso font-semibold"></div>
+          <div><label class="font-game text-[10px] text-espresso/70">PIC Legal / FIN:</label><input id="emailField_pic" value="Hảo" oninput="updateEmailBox()" class="w-full bg-latte p-2 rounded-xl border border-espresso font-semibold"></div>
+        </div>
+
+        <div>
+          <label class="font-game text-[10px] text-espresso/70">Nội dung hoàn chỉnh:</label>
+          <div id="emailBoxContent" class="bg-white p-3 rounded-xl border-2 border-espresso font-mono text-xs whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <button onclick="copyEmailText()" class="w-full py-2.5 bg-mustard hover:bg-mustard/90 text-espresso font-game font-bold rounded-xl border-2 border-espresso shadow-retro btn-bouncy flex items-center justify-center gap-2">
+        <span>📋</span> COPY NỘI DUNG VÀ TIÊU ĐỀ
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 4: TRỢ LÝ PUDDING BOT -->
+  <div id="modalBot" class="fixed inset-0 bg-espresso/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 hidden">
+    <div class="bg-creamy border-3 border-espresso rounded-3xl max-w-lg w-full p-5 shadow-retro-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+      <div class="flex items-center justify-between pb-3 border-b-2 border-espresso mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-3xl animate-bounce">🍮</span>
+          <div>
+            <h3 class="font-game text-base font-bold text-espresso">PUDDING BOT COMPANION</h3>
+            <p class="text-[11px] text-espresso/60">Gõ tên bạn Freelance để Bot báo trạng thái tức thì</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modalBot')" class="w-8 h-8 rounded-full bg-coral text-white font-game font-bold border-2 border-espresso flex items-center justify-center shadow-retro-sm btn-bouncy">✕</button>
+      </div>
+
+      <div class="flex gap-2 mb-3">
+        <input 
+          id="botQueryInput" 
+          type="text" 
+          placeholder="VD: Trâm, Nga, khi nào báo Diễm..." 
+          onkeydown="if(event.key === 'Enter') handleBotAsk()" 
+          class="flex-1 bg-latte p-2.5 text-xs rounded-xl border-2 border-espresso font-medium focus:outline-none focus:bg-white"
+        />
+        <button onclick="handleBotAsk()" class="px-4 py-2 bg-lavender text-white font-game font-bold text-xs rounded-xl border-2 border-espresso shadow-retro btn-bouncy">
+          Hỏi
+        </button>
+      </div>
+
+      <div id="botAnswerBox" class="bg-latte p-3 rounded-2xl border-2 border-espresso text-xs font-medium min-h-[120px] max-h-60 overflow-y-auto">
+        👋 Chào bồ! Gõ tên bạn Freelance (hoặc hỏi về Diễm, hóa đơn nháp, ứng tiền) để tớ kiểm tra nhé!
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC ENGINE TOÀN BỘ APP -->
+  <script>
+    // 1. DỮ LIỆU MOCK KHỞI TẠO (CHUẨN 19 CỘT)
+    let freelanceData = [
+      {
+        entity: "AMV",
+        camName: "TikTok Campaign 2026",
+        freelanceName: "Trâm",
+        pnlLink: "PnL_TikTok_v2.xlsx",
+        sow: "Livestream Host 5 buổi",
+        poStatus: "Đã có",
+        poId: "PO-2026-089",
+        poSignStatus: "Đã trình",
+        pnlStatus: "Đã có",
+        pnlFile: "PnL_Approved.pdf",
+        freelanceMoney: 12000000,
+        vendor: "CRE",
+        vendorMoney: 12121212,
+        fillMoneyFin: "Chưa điền",
+        payDateFin: "",
+        fillMoneyVendorCre: "Chưa điền",
+        statusGeneral: "Đang xử lý",
+        nextStep: "👉 Push anh Huy back ký mộc PO",
+        driveLink: "https://drive.google.com"
+      },
+      {
+        entity: "AME",
+        camName: "Shopee Video Mega",
+        freelanceName: "Nga",
+        pnlLink: "",
+        sow: "Editor Clip Reels",
+        poStatus: "Chưa có",
+        poId: "",
+        poSignStatus: "Chưa trình",
+        pnlStatus: "Chưa có",
+        pnlFile: "",
+        freelanceMoney: 8500000,
+        vendor: "CRE",
+        vendorMoney: 8585859,
+        fillMoneyFin: "Chưa điền",
+        payDateFin: "",
+        fillMoneyVendorCre: "N/A",
+        statusGeneral: "Chưa bắt đầu",
+        nextStep: "👉 Hỏi chị Ngọc xếp Freelance vào PnL tiền đều ➔ Xin anh Huy duyệt PnL",
+        driveLink: ""
+      },
+      {
+        entity: "ATV",
+        camName: "KOL Review Q3",
+        freelanceName: "Phong",
+        pnlLink: "PnL_KOL.xlsx",
+        sow: "KOL Booking Lead",
+        poStatus: "Đã có",
+        poId: "PO-2026-112",
+        poSignStatus: "Đã ký",
+        pnlStatus: "Đã có",
+        pnlFile: "PnL_KOL.pdf",
+        freelanceMoney: 15000000,
+        vendor: "CRE",
+        vendorMoney: 15151515,
+        fillMoneyFin: "Chưa điền",
+        payDateFin: "",
+        fillMoneyVendorCre: "Chưa điền",
+        statusGeneral: "Đang xử lý",
+        nextStep: "👉 Gửi PO bản cứng cho CRE làm Hợp đồng & Giấy tờ",
+        driveLink: ""
+      }
+    ];
+
+    // 2. ÂM THANH POP CHIME BẰNG WEB AUDIO API
+    function playChime(freq = 600) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    // 3. LOGIC NEXT STEP ENGINE (9 QUY TẮC)
+    function calcNextStep(row) {
+      const { poSignStatus, poId, camName, entity, pnlStatus, fillMoneyFin, vendor, fillMoneyVendorCre } = row;
+      if (poSignStatus === 'Đã trình') return '👉 Push anh Huy back ký mộc PO';
+      if (poSignStatus === 'Đã ký') return '👉 Gửi PO bản cứng cho CRE làm Hợp đồng & Giấy tờ';
+      if (poSignStatus === 'Đã gửi Vendor' && fillMoneyFin !== 'Đã điền') {
+        return `👉 Push CRE back giấy tờ ➔ Điền tiền File Nội Bộ FIN ${vendor === 'CRE' ? '& File CRE' : ''}`;
+      }
+      if (poId && poId !== 'THIẾU') {
+        if (!camName || !entity) return '👉 Bổ sung Tên Campaign & Entity ➔ In PO trình anh Huy ký mộc';
+        if (poSignStatus === 'Chưa trình') return '👉 In PO trình anh Huy ký mộc';
+      }
+      if (pnlStatus === 'Chưa có' || pnlStatus === 'false') {
+        return '👉 Hỏi chị Ngọc xếp Freelance vào PnL tiền đều ➔ Xin anh Huy duyệt PnL';
+      }
+      if ((pnlStatus === 'Đã có' || pnlStatus === 'true') && (!poId || poId === 'THIẾU')) {
+        return '👉 Collect đủ hồ sơ (BBNT, PO, PnL) ➔ Tạo PO ID Netsuite & Reply Loop xin số PO';
+      }
+      if (fillMoneyFin === 'Đã điền') {
+        if (vendor === 'CRE' && fillMoneyVendorCre !== 'Đã điền') return '👉 Điền thông tin vào File Điền Tiền CRE';
+        return '✅ Đã hoàn tất 100% quy trình!';
+      }
+      return '👉 Kiểm tra tiến độ hồ sơ';
+    }
+
+    // 4. PARSER PAPAPARSE CHỐNG DÍNH CỘT CSV GOOGLE SHEET
+    function syncDataFromCSV() {
+      const url = document.getElementById('sheetUrlInput').value.trim();
+      if (!url) {
+        alert("Bồ ơi dán link CSV Published vào ô trước nhé!");
+        return;
+      }
+      playChime(700);
+
+      Papa.parse(url, {
+        download: true,
+        header: false,
+        skipEmptyLines: true,
+        complete: function(results) {
+          const rows = results.data;
+          if (rows.length <= 1) {
+            alert("Không tìm thấy dữ liệu trong file CSV này!");
+            return;
+          }
+
+          let parsed = [];
+          for (let i = 1; i < rows.length; i++) {
+            const r = rows[i];
+            if (!r[2]) continue; // Phải có tên Freelance
+
+            const fMoney = parseFloat((r[10] || '0').toString().replace(/[^0-9.-]/g, '')) || 0;
+            const vendor = (r[11] || 'CRE').trim();
+            const vMoney = vendor === 'CRE' ? (fMoney > 0 ? Math.round(fMoney / 0.9 / 1.1) : 0) : fMoney;
+
+            const rowObj = {
+              entity: (r[0] || 'AMV').trim(),
+              camName: (r[1] || '').trim(),
+              freelanceName: (r[2] || '').trim(),
+              pnlLink: (r[3] || '').trim(),
+              sow: (r[4] || '').trim(),
+              poStatus: (r[5] || 'Chưa có').trim(),
+              poId: (r[6] || '').trim(),
+              poSignStatus: (r[7] || 'Chưa trình').trim(),
+              pnlStatus: (r[8] || 'Chưa có').trim(),
+              pnlFile: (r[9] || '').trim(),
+              freelanceMoney: fMoney,
+              vendor: vendor,
+              vendorMoney: vMoney,
+              fillMoneyFin: (r[13] || 'Chưa điền').trim(),
+              payDateFin: (r[14] || '').trim(),
+              fillMoneyVendorCre: (r[15] || 'N/A').trim(),
+              statusGeneral: (r[16] || 'Đang xử lý').trim(),
+              nextStep: '',
+              driveLink: (r[18] || '').trim()
+            };
+            rowObj.nextStep = calcNextStep(rowObj);
+            parsed.push(rowObj);
+          }
+
+          freelanceData = parsed;
+          renderAll();
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+          alert("🎉 Đồng bộ dữ liệu 19 cột từ Google Sheet thành công!");
+        },
+        error: function(err) {
+          alert("Lỗi khi đọc file CSV: " + err.message);
+        }
+      });
+    }
+
+    // 5. CÁC HÀM MỞ / ĐÓNG MODAL
+    function openModal(id) {
+      playChime(500);
+      document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+      playChime(350);
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // 6. RENDER BẢNG 19 CỘT
+    function renderTable() {
+      const q = (document.getElementById('tableSearchInput')?.value || '').toLowerCase();
+      const tbody = document.getElementById('tableBody');
+      const filtered = freelanceData.filter(d => 
+        d.freelanceName.toLowerCase().includes(q) ||
+        d.camName.toLowerCase().includes(q) ||
+        d.poId.toLowerCase().includes(q)
+      );
+
+      let html = '';
+      filtered.forEach((r, idx) => {
+        html += `
+          <tr class="hover:bg-latte transition-colors">
+            <td class="p-2 border-r border-espresso text-center">
+              <button onclick="pickForEmail(${idx})" class="px-2 py-0.5 bg-mustard text-espresso font-game font-bold rounded-lg border border-espresso shadow-retro-sm btn-bouncy text-[10px]">
+                Mail ✉️
+              </button>
+            </td>
+            <td class="p-2 border-r border-espresso font-bold">${r.entity}</td>
+            <td class="p-2 border-r border-espresso">${r.camName || '—'}</td>
+            <td class="p-2 border-r border-espresso font-bold text-coral">${r.freelanceName}</td>
+            <td class="p-2 border-r border-espresso text-espresso/60">${r.pnlLink || '—'}</td>
+            <td class="p-2 border-r-2 border-espresso">${r.sow || '—'}</td>
+            <td class="p-2 border-r border-espresso">${r.poStatus}</td>
+            <td class="p-2 border-r border-espresso font-mono font-bold text-sky">${r.poId || '—'}</td>
+            <td class="p-2 border-r border-espresso font-bold text-coral">${r.poSignStatus}</td>
+            <td class="p-2 border-r border-espresso">${r.pnlStatus}</td>
+            <td class="p-2 border-r-2 border-espresso">${r.pnlFile || '—'}</td>
+            <td class="p-2 border-r border-espresso font-bold text-sage">${r.freelanceMoney.toLocaleString('vi-VN')} ₫</td>
+            <td class="p-2 border-r border-espresso">${r.vendor}</td>
+            <td class="p-2 border-r border-espresso font-bold text-mustard">${r.vendorMoney.toLocaleString('vi-VN')} ₫</td>
+            <td class="p-2 border-r border-espresso">${r.fillMoneyFin}</td>
+            <td class="p-2 border-r border-espresso">${r.payDateFin || '—'}</td>
+            <td class="p-2 border-r-2 border-espresso">${r.fillMoneyVendorCre}</td>
+            <td class="p-2 border-r border-espresso">${r.statusGeneral}</td>
+            <td class="p-2 border-r border-espresso font-bold bg-sageLight/50 text-sage">${r.nextStep}</td>
+            <td class="p-2 font-mono text-[10px] text-sky hover:underline">${r.driveLink ? `<a href="${r.driveLink}" target="_blank">Drive</a>` : '—'}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html || '<tr><td colspan="20" class="p-4 text-center text-espresso/50">Không có dữ liệu!</td></tr>';
+    }
+
+    // 7. RENDER BẢNG KANBAN TIẾN ĐỘ PO
+    function renderKanban() {
+      const cols = {
+        'ChuaTrinh': document.getElementById('kanbanCol_ChuaTrinh'),
+        'DaTrinh': document.getElementById('kanbanCol_DaTrinh'),
+        'DaKy': document.getElementById('kanbanCol_DaKy'),
+        'DaGuiVendor': document.getElementById('kanbanCol_DaGuiVendor')
+      };
+      const counts = { 'ChuaTrinh': 0, 'DaTrinh': 0, 'DaKy': 0, 'DaGuiVendor': 0 };
+
+      Object.values(cols).forEach(c => c.innerHTML = '');
+
+      freelanceData.forEach((item, index) => {
+        let key = 'ChuaTrinh';
+        if (item.poSignStatus === 'Đã trình') key = 'DaTrinh';
+        if (item.poSignStatus === 'Đã ký') key = 'DaKy';
+        if (item.poSignStatus === 'Đã gửi Vendor') key = 'DaGuiVendor';
+
+        counts[key]++;
+
+        const card = document.createElement('div');
+        card.className = "bg-white p-3 rounded-xl border-2 border-espresso shadow-retro-sm text-xs space-y-1.5";
+        card.innerHTML = `
+          <div class="flex items-center justify-between font-game font-bold">
+            <span class="text-coral text-sm">${item.freelanceName}</span>
+            <span class="text-[10px] bg-latte px-1.5 py-0.5 rounded border border-espresso">${item.entity}</span>
+          </div>
+          <div class="text-[11px] text-espresso/70 truncate">${item.camName || 'Chưa có campaign'}</div>
+          <div class="font-bold text-sage">${item.freelanceMoney.toLocaleString('vi-VN')} ₫</div>
+          <div class="pt-2 border-t border-espresso/10 flex justify-between gap-1">
+            <button onclick="advancePOStatus(${index})" class="flex-1 py-1 bg-mustard hover:bg-mustard/90 text-espresso font-game font-bold rounded-lg border border-espresso text-[10px] btn-bouncy">
+              Tiến ➔
+            </button>
+            <button onclick="pickForEmail(${index})" class="px-2 py-1 bg-latte text-espresso font-game rounded-lg border border-espresso text-[10px] btn-bouncy">
+              ✉️
+            </button>
+          </div>
+        `;
+        cols[key].appendChild(card);
+      });
+
+      document.getElementById('badgeCount_ChuaTrinh').innerText = counts.ChuaTrinh;
+      document.getElementById('badgeCount_DaTrinh').innerText = counts.DaTrinh;
+      document.getElementById('badgeCount_DaKy').innerText = counts.DaKy;
+      document.getElementById('badgeCount_DaGuiVendor').innerText = counts.DaGuiVendor;
+    }
+
+    // CHUYỂN NHANH TRẠNG THÁI PO TRÊN KANBAN
+    function advancePOStatus(index) {
+      playChime(650);
+      const curr = freelanceData[index].poSignStatus;
+      if (curr === 'Chưa trình') freelanceData[index].poSignStatus = 'Đã trình';
+      else if (curr === 'Đã trình') freelanceData[index].poSignStatus = 'Đã ký';
+      else if (curr === 'Đã ký') freelanceData[index].poSignStatus = 'Đã gửi Vendor';
+      
+      freelanceData[index].nextStep = calcNextStep(freelanceData[index]);
+      renderAll();
+    }
+
+    // 8. TỰ ĐỘNG ĐỔ DATA VÀO EMAIL 1-CLICK
+    function pickForEmail(index) {
+      const item = freelanceData[index];
+      document.getElementById('emailField_entity').value = item.entity || 'AMV';
+      document.getElementById('emailField_cam').value = item.camName || '';
+      document.getElementById('emailField_id').value = item.poId || 'CAM0083383';
+      updateEmailBox();
+      openModal('modalEmail');
+    }
+
+    function updateEmailBox() {
+      const ent = document.getElementById('emailField_entity').value;
+      const cam = document.getElementById('emailField_cam').value;
+      const id = document.getElementById('emailField_id').value;
+      const pic = document.getElementById('emailField_pic').value;
+
+      const sub = `Re: [|INT| ${ent} x ${cam} - D2C - ${id} - CONTRACT REVIEW]`;
+      const body = `Dear anh/chị ${pic} và Legal team,\n\nAnh/chị và Team cho em gửi BBNT và PO của project ${cam}, nhờ anh/chị và team check và note lại giúp em nhé ạ.\n\nDear chị ${pic},\n\nEm nhờ chị gửi giúp em số PO cho PO này luôn nhé ạ.\n\nEm cảm ơn mọi người nhiều ạ.`;
+
+      document.getElementById('emailBoxContent').innerText = `${sub}\n\n${body}`;
+    }
+
+    function copyEmailText() {
+      const text = document.getElementById('emailBoxContent').innerText;
+      navigator.clipboard.writeText(text);
+      playChime(880);
+      confetti({ particleCount: 40, spread: 50 });
+      alert("📋 Đã copy xong tiêu đề và nội dung email!");
+    }
+
+    // 9. TRỢ LÝ PUDDING BOT
+    function handleBotAsk() {
+      const q = document.getElementById('botQueryInput').value.toLowerCase().trim();
+      if (!q) return;
+      playChime(600);
+
+      const box = document.getElementById('botAnswerBox');
+      
+      // Case tìm tên bạn Freelance
+      for (let f of freelanceData) {
+        if (q.includes(f.freelanceName.toLowerCase())) {
+          box.innerHTML = `
+            <div class="space-y-1">
+              <div class="font-game font-bold text-coral text-sm">🔎 TÌM THẤY: ${f.freelanceName.toUpperCase()}</div>
+              <div>• Campaign: <b>${f.camName || 'Chưa điền'}</b> (${f.entity})</div>
+              <div>• Tiền Freelance: <b>${f.freelanceMoney.toLocaleString('vi-VN')} ₫</b> | Vendor: <b>${f.vendorMoney.toLocaleString('vi-VN')} ₫</b></div>
+              <div>• Trạng thái PO: <b>${f.poStatus}</b> (ID: <code>${f.poId || 'THIẾU'}</code>)</div>
+              <div>• Trình ký: <b>${f.poSignStatus}</b></div>
+              <div class="mt-2 p-2 bg-mustardLight rounded-lg border border-espresso font-bold text-espresso">
+                ${f.nextStep}
+              </div>
+            </div>
+          `;
+          return;
+        }
+      }
+
+      if (q.includes('diễm')) {
+        box.innerHTML = "💡 <b>Khi nào báo Diễm?</b><br>Ngay sau khi có số PO từ FIN ➔ Điền số PO vào file ➔ Gửi bản mềm cho CRE ➔ Nhắn Diễm làm HĐ Freelance ngay nhé!";
+        return;
+      }
+
+      if (q.includes('hóa đơn nháp') || q.includes('hoá đơn nháp')) {
+        box.innerHTML = "💡 <b>Hóa đơn nháp:</b><br>Sau khi update Sheet PO ANM x CRE ➔ CRE sẽ xuất HĐ nháp ➔ Bồ confirm để chuyển sang bước xin ứng tiền.";
+        return;
+      }
+
+      box.innerHTML = "❓ Chưa thấy bạn này trong danh sách. Bồ thử gõ đúng tên như: <b>'Trâm'</b>, <b>'Nga'</b>, <b>'Phong'</b> hoặc hỏi <b>'Diễm'</b> nhé!";
+    }
+
+    // 10. TÍNH TOÁN METRICS TỔNG
+    function updateMetrics() {
+      let fUnpaid = 0, vUnpaid = 0;
+      freelanceData.forEach(d => {
+        if (d.fillMoneyFin !== 'Đã điền') {
+          fUnpaid += d.freelanceMoney;
+          vUnpaid += d.vendorMoney;
+        }
+      });
+      document.getElementById('quickFreelanceUnpaid').innerText = fUnpaid.toLocaleString('vi-VN') + ' ₫';
+      document.getElementById('quickVendorUnpaid').innerText = vUnpaid.toLocaleString('vi-VN') + ' ₫';
+    }
+
+    function resetMockData() {
+      playChime(600);
+      renderAll();
+    }
+
+    function renderAll() {
+      renderTable();
+      renderKanban();
+      updateMetrics();
+      updateEmailBox();
+    }
+
+    window.onload = function() {
+      renderAll();
+    };
+  </script>
+</body>
+</html>
